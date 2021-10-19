@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/mnt/148675C58675A7BE/Common/workspace/gitalyze/Debug",
+  "command": "/usr/bin/cc  -I/mnt/148675C58675A7BE/Common/workspace/gitalyze/Debug/external/include  -g   -std=gnu11 -o CMakeFiles/gitalyze.dir/main.c.o   -c /mnt/148675C58675A7BE/Common/workspace/gitalyze/main.c",
+  "file": "/mnt/148675C58675A7BE/Common/workspace/gitalyze/main.c"
+}
+]
