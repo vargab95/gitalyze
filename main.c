@@ -124,16 +124,16 @@ int process_commit_list(commit_list_t *commit_list, m_args_t *args)
         commit_list_print(commit_list);
     }
 
-    // if ((arg_entry = m_args_get(args, ARG_COMMIT_LIST_PATH)) &&
-    // arg_entry->flags.present)
-    // {
-    //     FILE *fp = fopen(arg_entry->value.string_val, "wb");
-    //     if (fp != NULL)
-    //     {
-    //         commit_list_dump(commit_list, fp);
-    //         fclose(fp);
-    //     }
-    // }
+    if ((arg_entry = m_args_get(args, ARG_COMMIT_LIST_PATH)) &&
+        arg_entry->flags.present)
+    {
+        FILE *fp = fopen(arg_entry->value.string_val, "wb");
+        if (fp != NULL)
+        {
+            commit_list_dump(commit_list, fp);
+            fclose(fp);
+        }
+    }
 
     return result_code;
 }

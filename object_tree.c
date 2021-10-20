@@ -83,8 +83,8 @@ void build_object_tree(object_tree_t *tree,
                 object->added_lines += change->added_lines;
                 object->removed_lines += change->deleted_lines;
 
-                printf("%p %ld %ld %ld\n", object, object->added_lines,
-                       object->removed_lines,
+                printf("%s %p %ld %ld %ld\n", commit->commit_id, object,
+                       object->added_lines, object->removed_lines,
                        object->added_lines - object->removed_lines);
             }
 

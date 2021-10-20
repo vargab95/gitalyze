@@ -243,7 +243,7 @@ int each_file_cb(const git_diff_delta *delta, float progress, void *payload)
     tmp.data = change;
 
     m_list_append_to_end_set(commit->change_list, &tmp);
-    // printf("%s %f\n", commit->commit_id, progress);
+    printf("%s %f\n", commit->commit_id, progress);
 
     // puts("EACH FILE CB");
     switch (delta->status)
@@ -362,7 +362,11 @@ void commit_list_fetch_local(commit_list_t *commit_list, const char *path)
     do
     {
         error = git_commit_parent(&parent, git_commit, 0);
-        if (error < 0)
+        if (error == -3)
+        {
+            parent = NULL;
+        }
+        else if (error < 0)
         {
             printf("3 %d\n", error);
             break;
@@ -383,11 +387,18 @@ void commit_list_fetch_local(commit_list_t *commit_list, const char *path)
             break;
         }
 
-        error = git_commit_tree(&parent_tree, parent);
-        if (error < 0)
+        if (parent != NULL)
         {
-            printf("5 %d\n", error);
-            break;
+            error = git_commit_tree(&parent_tree, parent);
+            if (error < 0)
+            {
+                printf("5 %d\n", error);
+                break;
+            }
+        }
+        else
+        {
+            parent_tree = NULL;
         }
 
         error = git_diff_tree_to_tree(&diff, repository, parent_tree,
