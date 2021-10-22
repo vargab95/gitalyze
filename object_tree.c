@@ -65,6 +65,7 @@ void build_object_tree(object_tree_t *tree,
             char *path_token_pointers[32] = {NULL};
             uint8_t path_token_count = 0;
             object_t *object = NULL;
+            object_t *parent = NULL;
 
             tokenize_path(local_path, path_token_pointers, &path_token_count);
 
@@ -86,6 +87,14 @@ void build_object_tree(object_tree_t *tree,
                 printf("%s %p %ld %ld %ld\n", commit->commit_id, object,
                        object->added_lines, object->removed_lines,
                        object->added_lines - object->removed_lines);
+
+                parent = object->parent;
+                while (parent)
+                {
+                    parent->added_lines += change->added_lines;
+                    parent->removed_lines += change->deleted_lines;
+                    parent = parent->parent;
+                }
             }
 
             free(local_path);
