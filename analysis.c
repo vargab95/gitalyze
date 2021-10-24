@@ -100,5 +100,6 @@ void execute_analyzes(object_tree_t *tree, m_list_t *analysis_libs, analysis_con
         dlclose(comp_tmp_ptr->handle);
     }
 
+    m_list_iterator_destroy(&analysis_function_iterator);
     m_list_destroy(&function_list);
 }

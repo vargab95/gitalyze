@@ -6,7 +6,7 @@
 static void tokenize_path(char *path_ptr, char **path_token_pointers, uint8_t *path_token_count);
 static object_t *get_or_create_object(object_tree_t *tree, char **path_token_pointers, uint8_t path_token_count);
 static void sign_deleted_folders(object_tree_t *tree);
-static void delete_if_all_children_of_folder_deleted(object_t *object);
+static void sign_deleted_if_all_children_of_folder_deleted(object_t *object);
 
 object_tree_t *create_object_tree()
 {
@@ -31,11 +31,7 @@ object_t *create_object()
 {
     object_t *object;
 
-    object = (object_t *)m_mem_malloc(sizeof(object_t));
-    object->name = NULL;
-    object->parent = NULL;
-    object->added_lines = 0;
-    object->removed_lines = 0;
+    object = (object_t *)m_mem_calloc(1, sizeof(object_t));
     object->children = m_map_create(10);
     object->child_iterator = m_map_iterator_create(object->children);
     object->analysis_results = m_map_create(5);
@@ -44,7 +40,30 @@ object_t *create_object()
     return object;
 }
 
-void delete_object(object_t **object) {}
+void delete_object(object_t **object)
+{
+    m_com_sized_data_t *tmp;
+    object_t *child;
+
+    m_map_iterator_reset((*object)->child_iterator);
+    for (; (tmp = m_map_iterator_value((*object)->child_iterator)); m_map_iterator_next((*object)->child_iterator))
+    {
+        child = tmp->data;
+        delete_object(&child);
+    }
+
+    m_list_destroy(&(*object)->changes);
+    m_map_iterator_destroy(&(*object)->child_iterator);
+    m_map_destroy(&(*object)->children);
+    m_map_destroy(&(*object)->analysis_results);
+
+    if (!(*object)->parent)
+    {
+        free(*object);
+    }
+
+    *object = NULL;
+}
 
 void build_object_tree(object_tree_t *tree, const commit_list_t *const commit_list)
 {
@@ -213,15 +232,19 @@ static object_t *get_or_create_object(object_tree_t *tree, char **path_token_poi
             value.size = sizeof(object_t);
             value.data = new_element;
 
-            m_map_set(element->children, &key, &value);
+            m_map_store(element->children, &key, &value);
             element = m_map_get(element->children, &key)->data;
             // printf("Creating folder %s in depth %d\n", path_token, i + 1);
+
+            free(new_element);
         }
         else
         {
             element = result->data;
             // printf("Found folder %s in depth %d\n", path_token, i + 1);
         }
+
+        free(key.data);
     }
 
     return element;
@@ -298,13 +321,13 @@ static void sign_deleted_folders(object_tree_t *tree)
 
     for (; (object = object_iterator_current(iterator)); object_iterator_next(iterator))
     {
-        delete_if_all_children_of_folder_deleted(object);
+        sign_deleted_if_all_children_of_folder_deleted(object);
     }
 
     destroy_object_iterator(&iterator);
 }
 
-static void delete_if_all_children_of_folder_deleted(object_t *object)
+static void sign_deleted_if_all_children_of_folder_deleted(object_t *object)
 {
     m_com_sized_data_t *tmp;
     object_t *child;
@@ -329,7 +352,7 @@ static void delete_if_all_children_of_folder_deleted(object_t *object)
         object->deleted = true;
         if (object->parent)
         {
-            delete_if_all_children_of_folder_deleted(object->parent);
+            sign_deleted_if_all_children_of_folder_deleted(object->parent);
         }
     }
 
