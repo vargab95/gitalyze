@@ -66,6 +66,7 @@ void execute_analyzes(object_tree_t *tree, m_list_t *analysis_libs, analysis_con
         analysis_tmp.data = &comp_tmp;
         m_list_append_to_end_store(function_list, &analysis_tmp);
     }
+    m_list_iterator_destroy(&lib_name_iterator);
 
     analysis_function_iterator = m_list_iterator_create(function_list);
     for (; (object = object_iterator_current(iterator)); object_iterator_next(iterator))

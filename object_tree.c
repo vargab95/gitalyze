@@ -52,6 +52,7 @@ void delete_object(object_t **object)
         delete_object(&child);
     }
 
+    free((*object)->name);
     m_list_destroy(&(*object)->changes);
     m_map_iterator_destroy(&(*object)->child_iterator);
     m_map_destroy(&(*object)->children);
@@ -220,7 +221,7 @@ static object_t *get_or_create_object(object_tree_t *tree, char **path_token_poi
     {
         char *path_token = path_token_pointers[i];
 
-        key.size = strlen(path_token);
+        key.size = strlen(path_token) + 1;
         key.data = strdup(path_token);
 
         result = m_map_get(element->children, &key);
@@ -228,7 +229,7 @@ static object_t *get_or_create_object(object_tree_t *tree, char **path_token_poi
         {
             new_element = create_object();
             new_element->parent = element;
-            new_element->name = key.data;
+            new_element->name = strdup(key.data);
             value.size = sizeof(object_t);
             value.data = new_element;
 

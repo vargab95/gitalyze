@@ -28,6 +28,8 @@ int analyze(object_tree_t *tree, object_t *object)
         }
     }
 
+    m_list_iterator_destroy(&change_iterator);
+
     double frequency = 0.0;
 
     if (newest_timestamp - oldest_timestamp > 0)

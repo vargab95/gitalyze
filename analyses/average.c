@@ -18,6 +18,8 @@ int analyze(object_tree_t *tree, object_t *object)
         number_of_changed_lines += change->added_lines + change->deleted_lines;
     }
 
+    m_list_iterator_destroy(&change_iterator);
+
     double average = 0.0;
 
     if (number_of_changes > 0)

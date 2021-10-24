@@ -56,8 +56,9 @@ int main(int argc, char **argv)
     }
     execute_analyzes(object_tree, analysis_libs, &analysis_configuration);
 
-    commit_list_destroy(&commit_list);
+    m_list_destroy(&analysis_libs);
     destroy_object_tree(&object_tree);
+    commit_list_destroy(&commit_list);
     m_args_destroy(&args);
 }
 
