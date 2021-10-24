@@ -38,6 +38,8 @@ void execute_analyzes(object_tree_t *tree, m_list_t *analysis_libs)
     object_t *object;
     analysis_function_composite_t comp_tmp, *comp_tmp_ptr;
 
+    iterator->max_depth = 2;
+
     lib_name_iterator = m_list_iterator_create(analysis_libs);
     for (m_list_iterator_go_to_head(lib_name_iterator); (tmp = m_list_iterator_current(lib_name_iterator)) != NULL;
          m_list_iterator_next(lib_name_iterator))
@@ -74,7 +76,8 @@ void execute_analyzes(object_tree_t *tree, m_list_t *analysis_libs)
         }
 
         print_indentation(object);
-        printf("%s deleted=%s", object->name ? object->name : "root", object->deleted ? "TRUE" : "FALSE");
+        // printf("%s deleted=%s", object->name ? object->name : "root", object->deleted ? "TRUE" : "FALSE");
+        printf("%s", object->name ? object->name : "root");
 
         for (m_list_iterator_go_to_head(analysis_function_iterator);
              (tmp = m_list_iterator_current(analysis_function_iterator)) != NULL;

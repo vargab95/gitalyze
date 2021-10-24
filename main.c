@@ -35,7 +35,10 @@ int main(int argc, char **argv)
 
     m_list_t *analysis_libs = m_list_create();
     m_com_sized_data_t tmp;
-    tmp.data = "./analyses/libgitalyze_analysis.so";
+    tmp.data = "./analyses/libgitalyze_analysis_frequency.so";
+    tmp.size = strlen(tmp.data);
+    m_list_append_to_end_set(analysis_libs, &tmp);
+    tmp.data = "./analyses/libgitalyze_analysis_average.so";
     tmp.size = strlen(tmp.data);
     m_list_append_to_end_set(analysis_libs, &tmp);
 

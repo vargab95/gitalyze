@@ -14,8 +14,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 include_directories(${EXTERNAL_INSTALL_LOCATION}/include)
 link_directories(${EXTERNAL_INSTALL_LOCATION}/lib)
 
-add_library(gitalyze_analysis SHARED
+add_library(gitalyze_analysis_frequency SHARED
             ${CMAKE_CURRENT_SOURCE_DIR}/frequency.c)
-target_link_libraries(gitalyze_analysis ${M_MAP_LIB} ${M_LIST_LIB} ${M_MEM_LIB})
+target_link_libraries(gitalyze_analysis_frequency ${M_MAP_LIB} ${M_LIST_LIB} ${M_MEM_LIB})
 
-set_property(TARGET gitalyze_analysis PROPERTY C_STANDARD 11)
+add_library(gitalyze_analysis_average SHARED
+            ${CMAKE_CURRENT_SOURCE_DIR}/average.c)
+target_link_libraries(gitalyze_analysis_average ${M_MAP_LIB} ${M_LIST_LIB} ${M_MEM_LIB})
+
+set_property(TARGET gitalyze_analysis_average PROPERTY C_STANDARD 11)
+set_property(TARGET gitalyze_analysis_frequency PROPERTY C_STANDARD 11)

@@ -35,6 +35,8 @@ typedef struct
 {
     object_tree_t *tree;
     object_t *object;
+    uint8_t max_depth;
+    uint8_t __depth;
 } object_tree_iterator_t;
 
 object_tree_t *create_object_tree();

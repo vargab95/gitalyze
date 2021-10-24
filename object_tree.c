@@ -233,6 +233,8 @@ object_tree_iterator_t *create_object_iterator(object_tree_t *tree)
 
     iterator->object = tree->root;
     iterator->tree = tree;
+    iterator->max_depth = -1;
+    iterator->__depth = 0;
     m_map_iterator_reset(iterator->object->child_iterator);
     tree->reference_count++;
 
@@ -256,24 +258,29 @@ void object_iterator_next(object_tree_iterator_t *iterator)
         return;
     }
 
-    // Check if there is a child
-    value = m_map_iterator_value(iterator->object->child_iterator);
-    if (value)
+    if (iterator->max_depth > 0 && iterator->__depth < iterator->max_depth)
     {
-        // Set child as current object
-        iterator->object = value->data;
+        // Check if there is a child
+        value = m_map_iterator_value(iterator->object->child_iterator);
+        if (value)
+        {
+            // Set child as current object
+            iterator->object = value->data;
+            iterator->__depth++;
 
-        // Reset child's iterator
-        m_map_iterator_reset(iterator->object->child_iterator);
+            // Reset child's iterator
+            m_map_iterator_reset(iterator->object->child_iterator);
 
-        // Step parent's child iterator to the next child
-        m_map_iterator_next(iterator->object->parent->child_iterator);
+            // Step parent's child iterator to the next child
+            m_map_iterator_next(iterator->object->parent->child_iterator);
 
-        return;
+            return;
+        }
     }
 
     // If no other child is present, go up to the parent
     iterator->object = iterator->object->parent;
+    iterator->__depth--;
 
     // Call iterator for parent
     object_iterator_next(iterator);
