@@ -15,7 +15,8 @@ enum
     ARG_REPOSITORY_URL = 2,
     ARG_COMMIT_LIST_PATH = 3,
     ARG_OBJECT_TREE_PATH = 4,
-    ARG_VERBOSE = 5
+    ARG_VERBOSE = 5,
+    ARG_MAX_DEPTH = 6
 } arg_types;
 
 m_args_t *get_args(int argc, char **argv);
@@ -27,6 +28,7 @@ int main(int argc, char **argv)
     object_tree_t *object_tree = create_object_tree();
     m_args_t *args = get_args(argc, argv);
     m_args_entry_t *arg_entry;
+    analysis_configuration_t analysis_configuration;
 
     if (!process_commit_list(commit_list, args))
     {
@@ -43,7 +45,16 @@ int main(int argc, char **argv)
     m_list_append_to_end_set(analysis_libs, &tmp);
 
     build_object_tree(object_tree, commit_list);
-    execute_analyzes(object_tree, analysis_libs);
+
+    if ((arg_entry = m_args_get(args, ARG_MAX_DEPTH)) && arg_entry->flags.present)
+    {
+        analysis_configuration.max_depth = arg_entry->value.int_val;
+    }
+    else
+    {
+        analysis_configuration.max_depth = -1;
+    }
+    execute_analyzes(object_tree, analysis_libs, &analysis_configuration);
 
     commit_list_destroy(&commit_list);
     destroy_object_tree(&object_tree);
@@ -92,6 +103,14 @@ m_args_t *get_args(int argc, char **argv)
                                             .environment_variable = "GITALYZE_VERBOSE",
                                             .flags = {.required = 0, .no_value = 1},
                                             .expected_type = ARG_TYPE_STRING,
+                                            .preference = ARG_PREFER_SHORT});
+
+    m_args_add_entry(args, (m_args_entry_t){.id = ARG_MAX_DEPTH,
+                                            .short_switch = "-d",
+                                            .long_switch = "--depth",
+                                            .environment_variable = "GITALYZE_DEPTH",
+                                            .flags = {.required = 0},
+                                            .expected_type = ARG_TYPE_INT,
                                             .preference = ARG_PREFER_SHORT});
 
     m_args_parse(args, argc, argv);

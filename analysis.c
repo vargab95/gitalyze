@@ -26,7 +26,7 @@ void print_indentation(object_t *object)
     }
 }
 
-void execute_analyzes(object_tree_t *tree, m_list_t *analysis_libs)
+void execute_analyzes(object_tree_t *tree, m_list_t *analysis_libs, analysis_configuration_t *configuration)
 {
     m_com_sized_data_t *tmp;
     m_com_sized_data_t analysis_tmp;
@@ -38,7 +38,7 @@ void execute_analyzes(object_tree_t *tree, m_list_t *analysis_libs)
     object_t *object;
     analysis_function_composite_t comp_tmp, *comp_tmp_ptr;
 
-    iterator->max_depth = 2;
+    iterator->max_depth = configuration->max_depth;
 
     lib_name_iterator = m_list_iterator_create(analysis_libs);
     for (m_list_iterator_go_to_head(lib_name_iterator); (tmp = m_list_iterator_current(lib_name_iterator)) != NULL;
