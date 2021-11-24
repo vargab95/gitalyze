@@ -14,15 +14,17 @@
 enum
 {
     ARG_REPOSITORY_PATH = 1,
-    ARG_REPOSITORY_URL = 2,
-    ARG_COMMIT_LIST_PATH = 3,
-    ARG_OBJECT_TREE_PATH = 4,
-    ARG_VERBOSE = 5,
-    ARG_MAX_DEPTH = 6,
-    ARG_BUILD_TREE_FROM = 7,
-    ARG_BUILD_TREE_TO = 8,
-    ARG_BUILD_TREE_STEP = 9,
-    ARG_PRINT_LIST_INFO = 10
+    ARG_REPOSITORY_URL,
+    ARG_COMMIT_LIST_PATH,
+    ARG_VERBOSE,
+    ARG_MAX_DEPTH,
+    ARG_BUILD_TREE_FROM,
+    ARG_BUILD_TREE_TO,
+    ARG_BUILD_TREE_STEP,
+    ARG_PRINT_LIST_INFO,
+    ARG_OUTPUT_FORMAT,
+    ARG_OUTPUT_FILE,
+    ARG_INDENT_OUTPUT
 } arg_types;
 
 m_args_t *get_args(int argc, char **argv);
@@ -108,8 +110,24 @@ int main(int argc, char **argv)
 
             execute_analyzes(object_tree, analysis_libs, &analysis_configuration);
 
-            write_result_configuration.file = stdout;
-            write_result_configuration.indent = true;
+            if ((arg_entry = m_args_get(args, ARG_OUTPUT_FILE)) && arg_entry->flags.present)
+            {
+                write_result_configuration.file = fopen(arg_entry->value.string_val, "w");
+            }
+            else
+            {
+                write_result_configuration.file = stdout;
+            }
+
+            if ((arg_entry = m_args_get(args, ARG_INDENT_OUTPUT)) && arg_entry->flags.present)
+            {
+                write_result_configuration.indent = true;
+            }
+            else
+            {
+                write_result_configuration.indent = false;
+            }
+
             execute_write_result(object_tree, "./result_writers/libgitalyze_json_result_writer.so",
                                  &write_result_configuration);
 
@@ -153,20 +171,11 @@ m_args_t *get_args(int argc, char **argv)
                                             .expected_type = ARG_TYPE_STRING,
                                             .preference = ARG_PREFER_SHORT});
 
-    m_args_add_entry(args, (m_args_entry_t){.id = ARG_OBJECT_TREE_PATH,
-                                            .short_switch = "-o",
-                                            .long_switch = "--object-tree-cache",
-                                            .environment_variable = "GITALYZE_OBJECT_TREE_LIST_PATH",
-                                            .flags = {.required = 0},
-                                            .expected_type = ARG_TYPE_STRING,
-                                            .preference = ARG_PREFER_SHORT});
-
     m_args_add_entry(args, (m_args_entry_t){.id = ARG_VERBOSE,
                                             .short_switch = "-v",
                                             .long_switch = "--verbose",
                                             .environment_variable = "GITALYZE_VERBOSE",
                                             .flags = {.required = 0, .no_value = 1},
-                                            .expected_type = ARG_TYPE_STRING,
                                             .preference = ARG_PREFER_SHORT});
 
     m_args_add_entry(args, (m_args_entry_t){.id = ARG_MAX_DEPTH,
@@ -205,8 +214,28 @@ m_args_t *get_args(int argc, char **argv)
                                             .short_switch = "-i",
                                             .long_switch = "--cache-info",
                                             .environment_variable = "GITALYZE_LIST_INFO",
+                                            .flags = {.required = 0, .no_value = 1},
+                                            .preference = ARG_PREFER_SHORT});
+
+    m_args_add_entry(args, (m_args_entry_t){.id = ARG_OUTPUT_FORMAT,
+                                            .long_switch = "--format",
+                                            .environment_variable = "GITALYZE_OUTPUT_FORMAT",
                                             .flags = {.required = 0},
                                             .expected_type = ARG_TYPE_STRING,
+                                            .preference = ARG_PREFER_SHORT});
+
+    m_args_add_entry(args, (m_args_entry_t){.id = ARG_OUTPUT_FILE,
+                                            .short_switch = "-o",
+                                            .long_switch = "--output",
+                                            .environment_variable = "GITALYZE_OUTPUT_FILE",
+                                            .flags = {.required = 0},
+                                            .expected_type = ARG_TYPE_STRING,
+                                            .preference = ARG_PREFER_SHORT});
+
+    m_args_add_entry(args, (m_args_entry_t){.id = ARG_INDENT_OUTPUT,
+                                            .long_switch = "--indent",
+                                            .environment_variable = "GITALYZE_INDENT_OUTPUT",
+                                            .flags = {.required = 0, .no_value = 1},
                                             .preference = ARG_PREFER_SHORT});
 
     m_args_parse(args, argc, argv);

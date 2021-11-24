@@ -73,7 +73,7 @@ void write_file_tree(const write_result_configuration_t *const configuration, ob
 
     child_iterator = m_map_iterator_create(object->children);
     tmp = m_map_iterator_value(result_iterator);
-    should_write_children = (tmp != NULL) && (depth < configuration->max_depth);
+    should_write_children = (tmp != NULL) && ((configuration->max_depth < 0) || (depth < configuration->max_depth));
 
     if (should_write_children)
     {
@@ -112,18 +112,14 @@ void write_file_tree(const write_result_configuration_t *const configuration, ob
 
 int write_result(object_tree_t *tree, const write_result_configuration_t *const configuration)
 {
-    object_tree_iterator_t *iterator = create_object_iterator(tree);
     m_map_iterator_t *result_iterator;
     m_com_sized_data_t *tmp;
     char from_buffer[32], to_buffer[32];
 
     object_t *object;
 
-    iterator->max_depth = configuration->max_depth;
-
     strftime(from_buffer, sizeof(from_buffer), "%FT%TZ", gmtime(&tree->from));
     strftime(to_buffer, sizeof(to_buffer), "%FT%TZ", gmtime(&tree->to));
-    print_line_ending(configuration);
     fprintf(configuration->file, "{");
 
     print_line_ending(configuration);
