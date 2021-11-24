@@ -19,11 +19,13 @@ enum
     ARG_VERBOSE = 5,
     ARG_MAX_DEPTH = 6,
     ARG_BUILD_TREE_FROM = 7,
-    ARG_BUILD_TREE_TO = 8
+    ARG_BUILD_TREE_TO = 8,
+    ARG_PRINT_LIST_INFO = 9
 } arg_types;
 
 m_args_t *get_args(int argc, char **argv);
 int process_commit_list(commit_list_t *commit_list, m_args_t *args);
+void print_commit_list_info(commit_list_t *commit_list);
 
 int main(int argc, char **argv)
 {
@@ -32,7 +34,7 @@ int main(int argc, char **argv)
     m_args_t *args = get_args(argc, argv);
     m_args_entry_t *arg_entry;
     analysis_configuration_t analysis_configuration;
-    time_t from, to;
+    commit_timestamp_t from, to;
 
     if (!process_commit_list(commit_list, args))
     {
@@ -48,35 +50,42 @@ int main(int argc, char **argv)
     tmp.size = strlen(tmp.data);
     m_list_append_to_end_set(analysis_libs, &tmp);
 
-    if ((arg_entry = m_args_get(args, ARG_BUILD_TREE_FROM)) && arg_entry->flags.present)
+    if ((arg_entry = m_args_get(args, ARG_PRINT_LIST_INFO)) && arg_entry->flags.present)
     {
-        from = arg_entry->value.int_val;
+        print_commit_list_info(commit_list);
     }
     else
     {
-        from = 0;
-    }
+        if ((arg_entry = m_args_get(args, ARG_BUILD_TREE_FROM)) && arg_entry->flags.present)
+        {
+            from = arg_entry->value.int_val;
+        }
+        else
+        {
+            from = 0;
+        }
 
-    if ((arg_entry = m_args_get(args, ARG_BUILD_TREE_TO)) && arg_entry->flags.present)
-    {
-        to = arg_entry->value.int_val;
-    }
-    else
-    {
-        to = time(0);
-    }
+        if ((arg_entry = m_args_get(args, ARG_BUILD_TREE_TO)) && arg_entry->flags.present)
+        {
+            to = arg_entry->value.int_val;
+        }
+        else
+        {
+            to = time(0);
+        }
 
-    build_object_tree(object_tree, commit_list, from, to);
+        build_object_tree(object_tree, commit_list, from, to);
 
-    if ((arg_entry = m_args_get(args, ARG_MAX_DEPTH)) && arg_entry->flags.present)
-    {
-        analysis_configuration.max_depth = arg_entry->value.int_val;
+        if ((arg_entry = m_args_get(args, ARG_MAX_DEPTH)) && arg_entry->flags.present)
+        {
+            analysis_configuration.max_depth = arg_entry->value.int_val;
+        }
+        else
+        {
+            analysis_configuration.max_depth = -1;
+        }
+        execute_analyzes(object_tree, analysis_libs, &analysis_configuration);
     }
-    else
-    {
-        analysis_configuration.max_depth = -1;
-    }
-    execute_analyzes(object_tree, analysis_libs, &analysis_configuration);
 
     m_list_destroy(&analysis_libs);
     destroy_object_tree(&object_tree);
@@ -107,7 +116,7 @@ m_args_t *get_args(int argc, char **argv)
     m_args_add_entry(args, (m_args_entry_t){.id = ARG_COMMIT_LIST_PATH,
                                             .short_switch = "-c",
                                             .long_switch = "--commit-list-cache",
-                                            .environment_variable = "GITALYZE_COMMIT_LIST_CACHE_PATH",
+                                            .environment_variable = "GITALYZE_COMMIT_LIST_LIST_PATH",
                                             .flags = {.required = 0},
                                             .expected_type = ARG_TYPE_STRING,
                                             .preference = ARG_PREFER_SHORT});
@@ -115,7 +124,7 @@ m_args_t *get_args(int argc, char **argv)
     m_args_add_entry(args, (m_args_entry_t){.id = ARG_OBJECT_TREE_PATH,
                                             .short_switch = "-o",
                                             .long_switch = "--object-tree-cache",
-                                            .environment_variable = "GITALYZE_OBJECT_TREE_CACHE_PATH",
+                                            .environment_variable = "GITALYZE_OBJECT_TREE_LIST_PATH",
                                             .flags = {.required = 0},
                                             .expected_type = ARG_TYPE_STRING,
                                             .preference = ARG_PREFER_SHORT});
@@ -150,6 +159,14 @@ m_args_t *get_args(int argc, char **argv)
                                             .environment_variable = "GITALYZE_TREE_TO",
                                             .flags = {.required = 0},
                                             .expected_type = ARG_TYPE_INT,
+                                            .preference = ARG_PREFER_SHORT});
+
+    m_args_add_entry(args, (m_args_entry_t){.id = ARG_PRINT_LIST_INFO,
+                                            .short_switch = "-i",
+                                            .long_switch = "--cache-info",
+                                            .environment_variable = "GITALYZE_LIST_INFO",
+                                            .flags = {.required = 0},
+                                            .expected_type = ARG_TYPE_STRING,
                                             .preference = ARG_PREFER_SHORT});
 
     m_args_parse(args, argc, argv);
@@ -195,4 +212,70 @@ int process_commit_list(commit_list_t *commit_list, m_args_t *args)
     }
 
     return result_code;
+}
+
+void print_commit_list_info(commit_list_t *commit_list)
+{
+    char buffer[32];
+    m_com_sized_data_t *tmp;
+    m_list_iterator_t *commit_iterator, *change_iterator;
+    commit_timestamp_t first_commit_time = 0, last_commit_time = time(0);
+    uint64_t commit_count = 0, change_count = 0;
+    uint64_t biggest_commit = 0;
+    uint32_t number_of_changes, max_number_of_changes = 0;
+
+    commit_iterator = m_list_iterator_create(commit_list->commit_list);
+    for (m_list_iterator_go_to_head(commit_iterator); (tmp = m_list_iterator_current(commit_iterator)) != NULL;
+         m_list_iterator_next(commit_iterator))
+    {
+        uint64_t changed_lines = 0;
+        commit_t *commit = tmp->data;
+
+        if (first_commit_time < commit->timestamp)
+        {
+            first_commit_time = commit->timestamp;
+        }
+
+        if (last_commit_time > commit->timestamp)
+        {
+            last_commit_time = commit->timestamp;
+        }
+
+        commit_count++;
+
+        number_of_changes = 0;
+        change_iterator = m_list_iterator_create(commit->change_list);
+        for (m_list_iterator_go_to_head(change_iterator); (tmp = m_list_iterator_current(change_iterator)) != NULL;
+             m_list_iterator_next(change_iterator))
+        {
+            change_t *change = tmp->data;
+            change_count++;
+            number_of_changes++;
+
+            changed_lines += change->added_lines + change->deleted_lines;
+        }
+
+        if (biggest_commit < changed_lines)
+        {
+            biggest_commit = changed_lines;
+        }
+
+        if (number_of_changes > max_number_of_changes)
+        {
+            max_number_of_changes = number_of_changes;
+        }
+
+        m_list_iterator_destroy(&change_iterator);
+    }
+    m_list_iterator_destroy(&commit_iterator);
+
+    printf("Last commit id:                        %s\n", commit_list->last_commit_id);
+    strftime(buffer, sizeof(buffer), "%FT%TZ", gmtime(&last_commit_time));
+    printf("Last commit timestamp:                 %s (%ld)\n", buffer, last_commit_time);
+    strftime(buffer, sizeof(buffer), "%FT%TZ", gmtime(&first_commit_time));
+    printf("First commit timestamp:                %s (%ld)\n", buffer, first_commit_time);
+    printf("Number of commits:                     %ld\n", commit_count);
+    printf("Number of changes:                     %ld\n", change_count);
+    printf("Biggest commit:                        %ld lines\n", biggest_commit);
+    printf("Maximum number of changes in a commit: %d\n", max_number_of_changes);
 }
