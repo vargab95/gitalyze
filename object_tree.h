@@ -41,7 +41,7 @@ typedef struct
 
 object_tree_t *create_object_tree();
 void destroy_object_tree(object_tree_t **tree);
-void build_object_tree(object_tree_t *tree, const commit_list_t *const commit_list);
+void build_object_tree(object_tree_t *tree, const commit_list_t *const commit_list, time_t from, time_t to);
 
 object_t *create_object();
 void delete_object(object_t **object);

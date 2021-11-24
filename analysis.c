@@ -31,7 +31,6 @@ void execute_analyzes(object_tree_t *tree, m_list_t *analysis_libs, analysis_con
     m_com_sized_data_t *tmp;
     m_com_sized_data_t analysis_tmp;
     m_list_iterator_t *lib_name_iterator, *analysis_function_iterator;
-    uint32_t tmp_str_len;
     m_list_t *function_list = m_list_create();
     analyze_func_t analysis_function = NULL;
     object_tree_iterator_t *iterator = create_object_iterator(tree);

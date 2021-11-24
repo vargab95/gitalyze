@@ -66,7 +66,7 @@ void delete_object(object_t **object)
     *object = NULL;
 }
 
-void build_object_tree(object_tree_t *tree, const commit_list_t *const commit_list)
+void build_object_tree(object_tree_t *tree, const commit_list_t *const commit_list, time_t from, time_t to)
 {
     m_com_sized_data_t *tmp, value;
     m_list_iterator_t *commit_iterator, *change_iterator;
@@ -87,7 +87,18 @@ void build_object_tree(object_tree_t *tree, const commit_list_t *const commit_li
     for (m_list_iterator_go_to_tail(commit_iterator); (tmp = m_list_iterator_current(commit_iterator)) != NULL;
          m_list_iterator_previous(commit_iterator))
     {
+        bool register_change = 0;
         commit = tmp->data;
+
+        if (commit->timestamp > to)
+        {
+            break;
+        }
+
+        if (commit->timestamp >= from)
+        {
+            register_change = 1;
+        }
 
         change_iterator = m_list_iterator_create(commit->change_list);
         for (m_list_iterator_go_to_head(change_iterator); (tmp = m_list_iterator_current(change_iterator)) != NULL;
@@ -109,13 +120,6 @@ void build_object_tree(object_tree_t *tree, const commit_list_t *const commit_li
 
             if (object)
             {
-                value.size = sizeof(change);
-                value.data = change;
-                m_list_append_to_end_set(object->changes, &value);
-
-                object->added_lines += change->added_lines;
-                object->removed_lines += change->deleted_lines;
-
                 // TODO Test readd
                 object->deleted = (change->type == OBJECT_DELETED);
 
@@ -153,8 +157,6 @@ void build_object_tree(object_tree_t *tree, const commit_list_t *const commit_li
                         {
                             old_object->deleted = 1;
                         }
-
-                        // TODO maintain parents as well
                     }
 
                     free(local_old_path);
@@ -163,16 +165,26 @@ void build_object_tree(object_tree_t *tree, const commit_list_t *const commit_li
                 // printf("%s %p %ld %ld %ld\n", commit->commit_id, object, object->added_lines, object->removed_lines,
                 //        object->added_lines - object->removed_lines);
 
-                parent = object->parent;
-                while (parent)
+                if (register_change)
                 {
-                    parent->added_lines += change->added_lines;
-                    parent->removed_lines += change->deleted_lines;
+                    value.size = sizeof(change);
+                    value.data = change;
+                    m_list_append_to_end_set(object->changes, &value);
 
-                    // Is this the best solution?
-                    m_list_append_to_end_set(parent->changes, &value);
+                    object->added_lines += change->added_lines;
+                    object->removed_lines += change->deleted_lines;
+                    parent = object->parent;
 
-                    parent = parent->parent;
+                    while (parent)
+                    {
+                        parent->added_lines += change->added_lines;
+                        parent->removed_lines += change->deleted_lines;
+
+                        // Is this the best solution?
+                        m_list_append_to_end_set(parent->changes, &value);
+
+                        parent = parent->parent;
+                    }
                 }
             }
 

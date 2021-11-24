@@ -4,6 +4,7 @@
 #include <m_libs/m_map.h>
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 #include "analysis.h"
 #include "commit_list.h"
@@ -16,7 +17,9 @@ enum
     ARG_COMMIT_LIST_PATH = 3,
     ARG_OBJECT_TREE_PATH = 4,
     ARG_VERBOSE = 5,
-    ARG_MAX_DEPTH = 6
+    ARG_MAX_DEPTH = 6,
+    ARG_BUILD_TREE_FROM = 7,
+    ARG_BUILD_TREE_TO = 8
 } arg_types;
 
 m_args_t *get_args(int argc, char **argv);
@@ -29,6 +32,7 @@ int main(int argc, char **argv)
     m_args_t *args = get_args(argc, argv);
     m_args_entry_t *arg_entry;
     analysis_configuration_t analysis_configuration;
+    time_t from, to;
 
     if (!process_commit_list(commit_list, args))
     {
@@ -44,7 +48,25 @@ int main(int argc, char **argv)
     tmp.size = strlen(tmp.data);
     m_list_append_to_end_set(analysis_libs, &tmp);
 
-    build_object_tree(object_tree, commit_list);
+    if ((arg_entry = m_args_get(args, ARG_BUILD_TREE_FROM)) && arg_entry->flags.present)
+    {
+        from = arg_entry->value.int_val;
+    }
+    else
+    {
+        from = 0;
+    }
+
+    if ((arg_entry = m_args_get(args, ARG_BUILD_TREE_TO)) && arg_entry->flags.present)
+    {
+        to = arg_entry->value.int_val;
+    }
+    else
+    {
+        to = time(0);
+    }
+
+    build_object_tree(object_tree, commit_list, from, to);
 
     if ((arg_entry = m_args_get(args, ARG_MAX_DEPTH)) && arg_entry->flags.present)
     {
@@ -110,6 +132,22 @@ m_args_t *get_args(int argc, char **argv)
                                             .short_switch = "-d",
                                             .long_switch = "--depth",
                                             .environment_variable = "GITALYZE_DEPTH",
+                                            .flags = {.required = 0},
+                                            .expected_type = ARG_TYPE_INT,
+                                            .preference = ARG_PREFER_SHORT});
+
+    m_args_add_entry(args, (m_args_entry_t){.id = ARG_BUILD_TREE_FROM,
+                                            .short_switch = "-f",
+                                            .long_switch = "--from",
+                                            .environment_variable = "GITALIZE_TREE_FROM",
+                                            .flags = {.required = 0},
+                                            .expected_type = ARG_TYPE_INT,
+                                            .preference = ARG_PREFER_SHORT});
+
+    m_args_add_entry(args, (m_args_entry_t){.id = ARG_BUILD_TREE_TO,
+                                            .short_switch = "-t",
+                                            .long_switch = "--to",
+                                            .environment_variable = "GITALYZE_TREE_TO",
                                             .flags = {.required = 0},
                                             .expected_type = ARG_TYPE_INT,
                                             .preference = ARG_PREFER_SHORT});

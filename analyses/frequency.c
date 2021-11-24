@@ -7,7 +7,7 @@ int analyze(object_tree_t *tree, object_t *object)
 {
     m_list_iterator_t *change_iterator = m_list_iterator_create(object->changes);
     m_com_sized_data_t *tmp, result, key;
-    uint32_t number_of_changes = 0;
+    uint64_t number_of_changes = 0;
     commit_timestamp_t oldest_timestamp = 200000000000000, newest_timestamp = 0;
 
     for (m_list_iterator_go_to_head(change_iterator); (tmp = m_list_iterator_current(change_iterator)) != NULL;

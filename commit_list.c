@@ -20,7 +20,6 @@ void commit_list_destroy(commit_list_t **commit_list)
 {
     m_com_sized_data_t *tmp;
     m_list_iterator_t *commit_iterator;
-    uint32_t tmp_str_len;
 
     commit_iterator = m_list_iterator_create((*commit_list)->commit_list);
     for (m_list_iterator_go_to_head(commit_iterator); (tmp = m_list_iterator_current(commit_iterator)) != NULL;
