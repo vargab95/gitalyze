@@ -20,7 +20,8 @@ enum
     ARG_MAX_DEPTH = 6,
     ARG_BUILD_TREE_FROM = 7,
     ARG_BUILD_TREE_TO = 8,
-    ARG_PRINT_LIST_INFO = 9
+    ARG_BUILD_TREE_STEP = 9,
+    ARG_PRINT_LIST_INFO = 10
 } arg_types;
 
 m_args_t *get_args(int argc, char **argv);
@@ -30,11 +31,11 @@ void print_commit_list_info(commit_list_t *commit_list);
 int main(int argc, char **argv)
 {
     commit_list_t *commit_list = commit_list_create();
-    object_tree_t *object_tree = create_object_tree();
+    object_tree_t *object_tree;
     m_args_t *args = get_args(argc, argv);
     m_args_entry_t *arg_entry;
     analysis_configuration_t analysis_configuration;
-    commit_timestamp_t from, to;
+    commit_timestamp_t from, to, step, stepped_from, stepped_to;
 
     if (!process_commit_list(commit_list, args))
     {
@@ -74,21 +75,49 @@ int main(int argc, char **argv)
             to = time(0);
         }
 
-        build_object_tree(object_tree, commit_list, from, to);
-
-        if ((arg_entry = m_args_get(args, ARG_MAX_DEPTH)) && arg_entry->flags.present)
+        stepped_from = from;
+        if ((arg_entry = m_args_get(args, ARG_BUILD_TREE_STEP)) && arg_entry->flags.present)
         {
-            analysis_configuration.max_depth = arg_entry->value.int_val;
+            step = arg_entry->value.int_val;
+            stepped_to = stepped_from + step;
         }
         else
         {
-            analysis_configuration.max_depth = -1;
+            step = time(0);
+            stepped_to = to;
         }
-        execute_analyzes(object_tree, analysis_libs, &analysis_configuration);
+
+        do
+        {
+            char from_buffer[32], to_buffer[32];
+
+            object_tree = create_object_tree();
+
+            build_object_tree(object_tree, commit_list, stepped_from, stepped_to);
+
+            if ((arg_entry = m_args_get(args, ARG_MAX_DEPTH)) && arg_entry->flags.present)
+            {
+                analysis_configuration.max_depth = arg_entry->value.int_val;
+            }
+            else
+            {
+                analysis_configuration.max_depth = -1;
+            }
+
+            strftime(from_buffer, sizeof(from_buffer), "%FT%TZ", gmtime(&stepped_from));
+            strftime(to_buffer, sizeof(to_buffer), "%FT%TZ", gmtime(&stepped_to));
+            printf("\nFrom %s to %s\n", from_buffer, to_buffer);
+
+            execute_analyzes(object_tree, analysis_libs, &analysis_configuration);
+
+            destroy_object_tree(&object_tree);
+
+            stepped_from += step;
+            stepped_to += step;
+        } while (stepped_from < to);
     }
 
     m_list_destroy(&analysis_libs);
-    destroy_object_tree(&object_tree);
     commit_list_destroy(&commit_list);
     m_args_destroy(&args);
 }
@@ -161,6 +190,14 @@ m_args_t *get_args(int argc, char **argv)
                                             .expected_type = ARG_TYPE_INT,
                                             .preference = ARG_PREFER_SHORT});
 
+    m_args_add_entry(args, (m_args_entry_t){.id = ARG_BUILD_TREE_STEP,
+                                            .short_switch = "-s",
+                                            .long_switch = "--step",
+                                            .environment_variable = "GITALYZE_TREE_STEP",
+                                            .flags = {.required = 0},
+                                            .expected_type = ARG_TYPE_INT,
+                                            .preference = ARG_PREFER_SHORT});
+
     m_args_add_entry(args, (m_args_entry_t){.id = ARG_PRINT_LIST_INFO,
                                             .short_switch = "-i",
                                             .long_switch = "--cache-info",
@@ -219,7 +256,7 @@ void print_commit_list_info(commit_list_t *commit_list)
     char buffer[32];
     m_com_sized_data_t *tmp;
     m_list_iterator_t *commit_iterator, *change_iterator;
-    commit_timestamp_t first_commit_time = 0, last_commit_time = time(0);
+    commit_timestamp_t first_commit_time = time(0), last_commit_time = 0;
     uint64_t commit_count = 0, change_count = 0;
     uint64_t biggest_commit = 0;
     uint32_t number_of_changes, max_number_of_changes = 0;
@@ -231,12 +268,12 @@ void print_commit_list_info(commit_list_t *commit_list)
         uint64_t changed_lines = 0;
         commit_t *commit = tmp->data;
 
-        if (first_commit_time < commit->timestamp)
+        if (first_commit_time > commit->timestamp)
         {
             first_commit_time = commit->timestamp;
         }
 
-        if (last_commit_time > commit->timestamp)
+        if (last_commit_time < commit->timestamp)
         {
             last_commit_time = commit->timestamp;
         }
