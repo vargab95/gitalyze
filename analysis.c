@@ -7,25 +7,6 @@ typedef struct
     void *handle;
 } analysis_function_composite_t;
 
-void print_full_path(object_t *object)
-{
-    if (object->parent)
-    {
-        print_full_path(object->parent);
-    }
-
-    printf("%s/", object->name ? object->name : "");
-}
-
-void print_indentation(object_t *object)
-{
-    if (object->parent)
-    {
-        print_indentation(object->parent);
-        printf("  ");
-    }
-}
-
 void execute_analyzes(object_tree_t *tree, m_list_t *analysis_libs, analysis_configuration_t *configuration)
 {
     m_com_sized_data_t *tmp;
@@ -75,10 +56,6 @@ void execute_analyzes(object_tree_t *tree, m_list_t *analysis_libs, analysis_con
             continue;
         }
 
-        print_indentation(object);
-        // printf("%s deleted=%s", object->name ? object->name : "root", object->deleted ? "TRUE" : "FALSE");
-        printf("%s", object->name ? object->name : "root");
-
         for (m_list_iterator_go_to_head(analysis_function_iterator);
              (tmp = m_list_iterator_current(analysis_function_iterator)) != NULL;
              m_list_iterator_next(analysis_function_iterator))
@@ -86,8 +63,6 @@ void execute_analyzes(object_tree_t *tree, m_list_t *analysis_libs, analysis_con
             comp_tmp_ptr = tmp->data;
             comp_tmp_ptr->analysis_function(tree, object);
         }
-
-        putchar('\n');
     }
 
     destroy_object_iterator(&iterator);

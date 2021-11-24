@@ -1,7 +1,7 @@
 #ifndef __OBJECT_H__
 #define __OBJECT_H__
 
-#include "commit_list.h"
+#include "../commit_list.h"
 #include <m_libs/m_list.h>
 #include <m_libs/m_map.h>
 
@@ -29,6 +29,8 @@ typedef struct
 
     time_t first_commit_date;
     time_t last_commit_date;
+    time_t from;
+    time_t to;
 } object_tree_t;
 
 typedef struct

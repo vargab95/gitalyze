@@ -84,6 +84,19 @@ void build_object_tree(object_tree_t *tree, const commit_list_t *const commit_li
     commit = tmp->data;
     tree->last_commit_date = commit->timestamp;
 
+    if (from < tree->first_commit_date)
+    {
+        from = tree->first_commit_date;
+    }
+
+    if (to > tree->last_commit_date)
+    {
+        to = tree->last_commit_date;
+    }
+
+    tree->from = from;
+    tree->to = to;
+
     for (m_list_iterator_go_to_tail(commit_iterator); (tmp = m_list_iterator_current(commit_iterator)) != NULL;
          m_list_iterator_previous(commit_iterator))
     {

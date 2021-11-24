@@ -8,7 +8,8 @@
 
 #include "analysis.h"
 #include "commit_list.h"
-#include "object_tree.h"
+#include "object_tree/object_tree.h"
+#include "result_writer.h"
 
 enum
 {
@@ -35,6 +36,7 @@ int main(int argc, char **argv)
     m_args_t *args = get_args(argc, argv);
     m_args_entry_t *arg_entry;
     analysis_configuration_t analysis_configuration;
+    write_result_configuration_t write_result_configuration;
     commit_timestamp_t from, to, step, stepped_from, stepped_to;
 
     if (!process_commit_list(commit_list, args))
@@ -89,8 +91,6 @@ int main(int argc, char **argv)
 
         do
         {
-            char from_buffer[32], to_buffer[32];
-
             object_tree = create_object_tree();
 
             build_object_tree(object_tree, commit_list, stepped_from, stepped_to);
@@ -98,17 +98,20 @@ int main(int argc, char **argv)
             if ((arg_entry = m_args_get(args, ARG_MAX_DEPTH)) && arg_entry->flags.present)
             {
                 analysis_configuration.max_depth = arg_entry->value.int_val;
+                write_result_configuration.max_depth = arg_entry->value.int_val;
             }
             else
             {
                 analysis_configuration.max_depth = -1;
+                write_result_configuration.max_depth = -1;
             }
 
-            strftime(from_buffer, sizeof(from_buffer), "%FT%TZ", gmtime(&stepped_from));
-            strftime(to_buffer, sizeof(to_buffer), "%FT%TZ", gmtime(&stepped_to));
-            printf("\nFrom %s to %s\n", from_buffer, to_buffer);
-
             execute_analyzes(object_tree, analysis_libs, &analysis_configuration);
+
+            write_result_configuration.file = stdout;
+            write_result_configuration.indent = true;
+            execute_write_result(object_tree, "./result_writers/libgitalyze_json_result_writer.so",
+                                 &write_result_configuration);
 
             destroy_object_tree(&object_tree);
 

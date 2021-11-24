@@ -26,13 +26,15 @@ link_directories(${EXTERNAL_INSTALL_LOCATION}/lib)
 
 add_executable(gitalyze
                ${CMAKE_CURRENT_SOURCE_DIR}/main.c
-               ${CMAKE_CURRENT_SOURCE_DIR}/object_tree.c
                ${CMAKE_CURRENT_SOURCE_DIR}/commit_list.c
                ${CMAKE_CURRENT_SOURCE_DIR}/analysis.c
+               ${CMAKE_CURRENT_SOURCE_DIR}/result_writer.c
                )
 add_dependencies(gitalyze libgit2)
-target_link_libraries(gitalyze git2 ${M_ARGS_LIB} ${M_MAP_LIB} ${M_LIST_LIB} ${M_MEM_LIB} ${CMAKE_DL_LIBS})
+target_link_libraries(gitalyze gitalyze_object_tree git2 ${M_ARGS_LIB} ${M_MAP_LIB} ${M_LIST_LIB} ${M_MEM_LIB} ${CMAKE_DL_LIBS})
 
 set_property(TARGET gitalyze PROPERTY C_STANDARD 11)
 
 add_subdirectory(analyses)
+add_subdirectory(result_writers)
+add_subdirectory(object_tree)

@@ -1,12 +1,14 @@
 #include "../analysis.h"
 #include "../commit_list.h"
 #include <m_libs/m_list.h>
+#include <m_libs/m_mem.h>
 #include <string.h>
 
 int analyze(object_tree_t *tree, object_t *object)
 {
     m_list_iterator_t *change_iterator = m_list_iterator_create(object->changes);
-    m_com_sized_data_t *tmp, result, key;
+    m_com_sized_data_t *tmp, sized_result, key;
+    analysis_result_t *result;
     uint64_t number_of_changes = 0;
     commit_timestamp_t oldest_timestamp = 200000000000000, newest_timestamp = 0;
 
@@ -38,13 +40,18 @@ int analyze(object_tree_t *tree, object_t *object)
         frequency = number_of_changes / ((double)(tree->last_commit_date - tree->first_commit_date) / (3600 * 24));
     }
 
-    printf(" frequency=%lf 1/day", frequency);
+    sized_result.size = sizeof(analysis_result_t);
+    result = sized_result.data = m_mem_malloc(sized_result.size);
 
     key.data = "frequency";
     key.size = strlen(key.data) + 1;
-    result.size = sizeof(frequency);
-    result.data = &frequency;
-    m_map_store(object->analysis_results, &key, &result);
+
+    result->choice = ANALYSIS_RESULT_TYPE_DOUBLE;
+    result->result.d = frequency;
+    result->name = strdup("frequency");
+    result->unit = strdup("1/day");
+
+    m_map_store(object->analysis_results, &key, &sized_result);
 
     return 0;
 }
