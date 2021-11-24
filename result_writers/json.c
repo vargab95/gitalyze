@@ -34,38 +34,44 @@ void write_file_tree(const write_result_configuration_t *const configuration, ob
     m_map_iterator_t *child_iterator;
     m_com_sized_data_t *tmp;
     object_t *child;
-    bool should_write_children = false;
+    bool should_write_children = false, should_write_results;
 
     print_indentation(configuration, depth);
     result_iterator = m_map_iterator_create(object->analysis_results);
 
     fprintf(configuration->file, "\"%s\": {", object->name ? object->name : "root");
     print_line_ending(configuration);
-    print_indentation(configuration, depth + 1);
-    fprintf(configuration->file, "\"results\": {");
-    print_line_ending(configuration);
 
     tmp = m_map_iterator_value(result_iterator);
-    while (tmp)
+    should_write_results = (tmp != NULL);
+
+    if (should_write_results)
     {
-        analysis_result_t *analysis_result = tmp->data;
+        print_indentation(configuration, depth + 1);
+        fprintf(configuration->file, "\"results\": {");
+        print_line_ending(configuration);
 
-        print_indentation(configuration, depth + 2);
-        fprintf(configuration->file, "\"%s\": %lf", analysis_result->name, analysis_result->result.d);
-
-        m_map_iterator_next(result_iterator);
-        tmp = m_map_iterator_value(result_iterator);
-
-        if (tmp)
+        while (tmp)
         {
-            fprintf(configuration->file, ",");
-            print_line_ending(configuration);
-        }
-        else
-        {
-            print_line_ending(configuration);
-            print_indentation(configuration, depth + 1);
-            fprintf(configuration->file, "}");
+            analysis_result_t *analysis_result = tmp->data;
+
+            print_indentation(configuration, depth + 2);
+            fprintf(configuration->file, "\"%s\": %lf", analysis_result->name, analysis_result->result.d);
+
+            m_map_iterator_next(result_iterator);
+            tmp = m_map_iterator_value(result_iterator);
+
+            if (tmp)
+            {
+                fprintf(configuration->file, ",");
+                print_line_ending(configuration);
+            }
+            else
+            {
+                print_line_ending(configuration);
+                print_indentation(configuration, depth + 1);
+                fprintf(configuration->file, "}");
+            }
         }
     }
 
@@ -77,8 +83,12 @@ void write_file_tree(const write_result_configuration_t *const configuration, ob
 
     if (should_write_children)
     {
-        fprintf(configuration->file, ",");
-        print_line_ending(configuration);
+        if (should_write_results)
+        {
+            fprintf(configuration->file, ",");
+            print_line_ending(configuration);
+        }
+
         print_indentation(configuration, depth + 1);
         fprintf(configuration->file, "\"children\": {");
         print_line_ending(configuration);
@@ -87,16 +97,25 @@ void write_file_tree(const write_result_configuration_t *const configuration, ob
         {
             child = tmp->data;
 
-            write_file_tree(configuration, child, depth + 2);
-
-            m_map_iterator_next(result_iterator);
-            tmp = m_map_iterator_value(result_iterator);
-
-            if (tmp)
+            if (!child->deleted)
             {
-                fprintf(configuration->file, ",");
+                write_file_tree(configuration, child, depth + 2);
             }
-            print_line_ending(configuration);
+
+            do
+            {
+                m_map_iterator_next(result_iterator);
+                tmp = m_map_iterator_value(result_iterator);
+            } while (tmp && ((object_t *)tmp->data)->deleted);
+
+            if (!child->deleted)
+            {
+                if (tmp)
+                {
+                    fprintf(configuration->file, ",");
+                }
+                print_line_ending(configuration);
+            }
         }
 
         print_indentation(configuration, depth + 1);
