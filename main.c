@@ -24,7 +24,8 @@ enum
     ARG_PRINT_LIST_INFO,
     ARG_OUTPUT_FORMAT,
     ARG_OUTPUT_FILE,
-    ARG_INDENT_OUTPUT
+    ARG_INDENT_OUTPUT,
+    ARG_HELP
 } arg_types;
 
 m_args_t *get_args(int argc, char **argv);
@@ -41,9 +42,16 @@ int main(int argc, char **argv)
     write_result_configuration_t write_result_configuration;
     commit_timestamp_t from, to, step, stepped_from, stepped_to;
 
+    if ((arg_entry = m_args_get(args, ARG_HELP)) && arg_entry->flags.present)
+    {
+        m_args_print_help(args)     ;
+        return 0;
+    }
+
     if (!process_commit_list(commit_list, args))
     {
         puts("Cannot continue because commit list could not be loaded");
+        return 1;
     }
 
     m_list_t *analysis_libs = m_list_create();
@@ -65,10 +73,12 @@ int main(int argc, char **argv)
         {
             from = arg_entry->value.int_val;
         }
+#if 0
         else
         {
             from = 0;
         }
+#endif
 
         if ((arg_entry = m_args_get(args, ARG_BUILD_TREE_TO)) && arg_entry->flags.present)
         {
@@ -145,7 +155,7 @@ int main(int argc, char **argv)
 
 m_args_t *get_args(int argc, char **argv)
 {
-    m_args_t *args = m_args_create();
+    m_args_t *args = m_args_create("Tool to analyze git repositories");
 
     m_args_add_entry(args, (m_args_entry_t){.id = ARG_REPOSITORY_PATH,
                                             .short_switch = "-p",
@@ -235,6 +245,12 @@ m_args_t *get_args(int argc, char **argv)
     m_args_add_entry(args, (m_args_entry_t){.id = ARG_INDENT_OUTPUT,
                                             .long_switch = "--indent",
                                             .environment_variable = "GITALYZE_INDENT_OUTPUT",
+                                            .flags = {.required = 0, .no_value = 1},
+                                            .preference = ARG_PREFER_SHORT});
+
+    m_args_add_entry(args, (m_args_entry_t){.id = ARG_HELP,
+                                            .short_switch = "-h",
+                                            .long_switch = "--help",
                                             .flags = {.required = 0, .no_value = 1},
                                             .preference = ARG_PREFER_SHORT});
 

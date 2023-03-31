@@ -74,23 +74,27 @@ void commit_list_dump(const commit_list_t *const commit_list, FILE *output_file)
     m_com_sized_data_t *tmp;
     m_list_iterator_t *commit_iterator, *change_iterator;
     uint32_t tmp_str_len;
+    size_t commit_list_size;
+
+    commit_list_size = m_list_get_size(commit_list->commit_list);
 
     tmp_str_len = strlen(commit_list->last_commit_id);
     fwrite(&tmp_str_len, sizeof(tmp_str_len), 1, output_file);
     fwrite(commit_list->last_commit_id, sizeof(char), tmp_str_len, output_file);
-    fwrite(&commit_list->commit_list->size, sizeof(commit_list->commit_list->size), 1, output_file);
+    fwrite(&commit_list_size, sizeof(commit_list_size), 1, output_file);
     commit_iterator = m_list_iterator_create(commit_list->commit_list);
     for (m_list_iterator_go_to_head(commit_iterator); (tmp = m_list_iterator_current(commit_iterator)) != NULL;
          m_list_iterator_next(commit_iterator))
     {
         commit_t *commit = tmp->data;
+        size_t change_list_size = m_list_get_size(commit->change_list);
 
         tmp_str_len = strlen(commit_list->last_commit_id);
         fwrite(&tmp_str_len, sizeof(tmp_str_len), 1, output_file);
         fwrite(commit->commit_id, sizeof(char), tmp_str_len, output_file);
         fwrite(&commit->timestamp, sizeof(commit_timestamp_t), 1, output_file);
 
-        fwrite(&commit->change_list->size, sizeof(commit->change_list->size), 1, output_file);
+        fwrite(&change_list_size, sizeof(change_list_size), 1, output_file);
         change_iterator = m_list_iterator_create(commit->change_list);
         for (m_list_iterator_go_to_head(change_iterator); (tmp = m_list_iterator_current(change_iterator)) != NULL;
              m_list_iterator_next(change_iterator))
@@ -273,7 +277,8 @@ int each_binary_cb(const git_diff_delta *delta, const git_diff_binary *binary, v
 int each_hunk_cb(const git_diff_delta *delta, const git_diff_hunk *hunk, void *payload)
 {
     commit_t *commit = (commit_t *)payload;
-    change_t *change = commit->change_list->tail->data.data;
+    m_com_sized_data_t *last = m_list_get_last(commit->change_list);
+    change_t *change = last->data;
     // // puts("EACH HUNK CB");
     change->added_lines += hunk->new_lines;
     change->deleted_lines += hunk->old_lines;
