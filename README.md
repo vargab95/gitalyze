@@ -1,8 +1,6 @@
 # gitalyze
 
-Tool for analyzing changes in a git repository. It's a project to check whether
-my other project https://gitlab.com/vargab95/mlibs can be used in another project
-properly.
+Tool for analyzing changes in a git repository.
 
 The purpose of this tool is to be able to fetch all commits from a git repository
 and be able to create statistics in a per folder basis. Like generating the average
